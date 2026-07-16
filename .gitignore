@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output
+
+# Production
+dist/
+build/
+*.log
+
+# Environment
+.env
+.env.local
+.env.production
+.env.test
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Kenny assets (external downloads)
+public/assets/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+logs/
+*.log.*
