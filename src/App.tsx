@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { GameEngine } from './engine/GameEngine';
+import { GameEngine } from './engine/GameEngine';
 import type { GameScreen, Notification, NPCId, FishingState } from './engine/types';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
