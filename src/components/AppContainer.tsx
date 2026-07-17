@@ -1,11 +1,12 @@
 import * as React from 'react'
 import './App.css'
+import { BuildingType } from '../types/game'
 
 interface GameStateDisplayProps {
   gameState: {
     time: number
     resources: { ore: number; water: number; energy: number }
-    buildings: Building[]
+    buildings: any[]
     villagerCount: number
   }
   showInventory: boolean

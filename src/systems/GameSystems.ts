@@ -1,5 +1,4 @@
-import * as typegpu from 'typegpu'
-import { GameWorld, Camera } from '../engine'
+import { GameWorld } from '../engine'
 import { GameState, BuildingType, ControllerType } from '../types/game'
 
 // Colony System class

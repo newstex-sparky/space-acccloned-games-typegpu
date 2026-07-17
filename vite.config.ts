@@ -13,8 +13,8 @@ const checkWebGPUSupport = (): void => {
 }
 
 export default defineConfig({
-  root: resolve(__dirname, 'src'),
-  base: '/',  // GitHub Pages default
+  root: resolve(__dirname),  // Use repo root so index.html is found
+  base: '/space-acccloned-games-typegpu/',  // GitHub Pages subpath
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
@@ -27,13 +27,7 @@ export default defineConfig({
       }
     },
     // Optimize for production
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      }
-    }
+    minify: 'esbuild',
   },
   server: {
     port: 8001,
@@ -59,6 +53,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['typegpu']
   },
-  // GitHub Pages optimization
-  base: '/',
 }) as InlineConfig

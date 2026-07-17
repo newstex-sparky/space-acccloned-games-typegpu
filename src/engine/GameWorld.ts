@@ -1,25 +1,36 @@
 import * as typegpu from 'typegpu'
-import { CanvasRenderingContext2D } from 'canvas'
-import { GameState, BuildingType } from '../types/game'
 
 // TypeGPU Renderer class
 export class TypeGPURenderer {
   private canvas: HTMLCanvasElement
-  private context: typegpu.GPUDevice
-  private swapChain: typegpu.Surface | null = null
-  private pipeline: typegpu.ComputePipeline | null = null
+  private swapChain: any | null = null
+  private pipeline: any | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
   }
 
   async init(): Promise<void> {
-    // Initialize TypeGPU
-    if (typeof typegpu !== 'undefined') {
-      this.context = typegpu.requestDevice()
+    try {
+      const adapter = await navigator.gpu?.requestAdapter()
+      if (!adapter) {
+        console.warn('⚠️ WebGPU adapter not available, running in fallback mode')
+        return
+      }
+      const device = await adapter.requestDevice()
+      const context = this.canvas.getContext('webgpu')
+      if (context) {
+        context.configure({
+          device,
+          format: 'bgra8unorm',
+          alphaMode: 'premultiplied'
+        })
+      }
+      this.canvas.width = window.innerWidth
+      this.canvas.height = window.innerHeight
       console.log('✅ TypeGPU renderer initialized')
-    } else {
-      console.warn('⚠️ TypeGPU not available')
+    } catch (err) {
+      console.warn('⚠️ TypeGPU init failed, running in fallback mode:', err)
     }
   }
 
@@ -27,16 +38,20 @@ export class TypeGPURenderer {
     this.canvas.width = width
     this.canvas.height = height
   }
+
+  render(): void {
+    // Render frame — minimal placeholder for now
+  }
 }
 
 // Game World class
 export class GameWorld {
   readonly canvas: HTMLCanvasElement
-  readonly context: CanvasRenderingContext2D
+  readonly ctx: CanvasRenderingContext2D | null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    this.context = canvas.getContext('2d')!
+    this.ctx = canvas.getContext('2d')
   }
 
   update(): void {
@@ -49,7 +64,9 @@ export class GameWorld {
   }
 
   clear(): void {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    if (this.ctx) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    }
   }
 }
 

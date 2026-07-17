@@ -1,9 +1,9 @@
 import * as React from 'react'
-import { AppContainer } from './components/AppContainer'
-import { GameStateDisplay } from './components/GameStateDisplay'
-import { ActionButtons } from './components/ActionButtons'
-import { InputSystem, ControllerType } from '../systems/GameSystems'
-import { GameWorld, ColonySystem, VillagerSystem, ResourceSystem, TimeSystem, TypeGPURenderer } from '../engine'
+import './components/App.css'
+import { GameStateDisplay, ActionButtons, AppContainer } from './components/AppContainer'
+import { InputSystem } from '../systems/GameSystems'
+import { GameWorld, TypeGPURenderer } from '../engine'
+import { ColonySystem, VillagerSystem, ResourceSystem, TimeSystem } from '../systems/GameSystems'
 import { GameState, BuildingType } from '../types/game'
 
 interface AppProps {
@@ -28,7 +28,7 @@ export const App: React.FC<AppProps> = ({
   const [gameState, setGameState] = React.useState<GameState>(colony.getGameState())
   const [showInventory, setShowInventory] = React.useState(false)
   const [controllerConnected, setControllerConnected] = React.useState(false)
-  const [controllerType, setControllerType] = React.useState<ControllerType | null>(null)
+  const [controllerType, setControllerType] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -71,7 +71,7 @@ export const App: React.FC<AppProps> = ({
     <AppContainer>
       {controllerConnected && (
         <div className="controller-connected">
-          🎮 {controllerType.toUpperCase()} Controller Connected
+          🎮 {controllerType?.toUpperCase()} Controller Connected
         </div>
       )}
 
