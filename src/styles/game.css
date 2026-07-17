@@ -1,0 +1,1125 @@
+/* ============ Space Harvest - Mobile-First Game CSS ============ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  overflow: hidden;
+  background: #0a0a1f;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* ============ Game Container ============ */
+.game-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  touch-action: none;
+}
+
+.ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ui-layer > * {
+  pointer-events: auto;
+}
+
+/* ============ Start Screen ============ */
+.start-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0a0a2f, #1a0a3f, #2a1a5f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.start-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.start-content h1 {
+  font-size: 2rem;
+  color: #ffee44;
+  margin-bottom: 8px;
+  text-shadow: 0 0 20px rgba(255, 238, 68, 0.5);
+}
+
+.start-subtitle {
+  font-size: 1rem;
+  color: #88aaff;
+  margin-bottom: 20px;
+}
+
+.start-features {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.start-features p {
+  color: #ccccee;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.btn-start {
+  background: linear-gradient(135deg, #44aa44, #22aa66);
+  color: white;
+  border: none;
+  padding: 14px 40px;
+  font-size: 1.2rem;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(68, 170, 68, 0.4);
+  transition: transform 0.2s;
+}
+
+.btn-start:active {
+  transform: scale(0.95);
+}
+
+.start-hint {
+  color: #6677aa;
+  font-size: 0.75rem;
+  margin-top: 16px;
+}
+
+/* ============ HUD ============ */
+.hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.hud-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(10, 10, 30, 0.7);
+  border: 1px solid rgba(100, 100, 200, 0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  color: #fff;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.energy-item {
+  flex: 1;
+  max-width: 180px;
+}
+
+.hud-icon {
+  font-size: 0.9rem;
+}
+
+.hud-value {
+  font-weight: bold;
+}
+
+.hud-day {
+  font-size: 0.65rem;
+  color: #aaa;
+  margin-left: 2px;
+}
+
+.hud-bar-container {
+  flex: 1;
+  height: 14px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 7px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-bar {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.3s, background 0.3s;
+}
+
+.hud-bar-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.6rem;
+  line-height: 14px;
+  color: #fff;
+  text-shadow: 0 0 2px #000;
+}
+
+.hud-mine-badge {
+  background: rgba(100, 50, 50, 0.8);
+  border: 1px solid #ff6644;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  color: #ffaa88;
+  align-self: flex-start;
+}
+
+.hud-deco-badge {
+  background: rgba(50, 100, 50, 0.8);
+  border: 1px solid #44ff44;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  color: #aaffaa;
+  align-self: flex-start;
+}
+
+/* ============ Touch Controls ============ */
+.touch-controls {
+  position: absolute;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  height: 140px;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.joystick {
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+  width: 120px;
+  height: 120px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.joystick-base {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(50, 50, 100, 0.3);
+  border: 2px solid rgba(100, 100, 200, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  margin: -25px 0 0 -25px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #6688ff, #3344aa);
+  border: 2px solid #88aaff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.05s;
+}
+
+.action-area {
+  position: absolute;
+  bottom: 10px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.action-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff8844, #cc4422);
+  border: 3px solid #ffaa66;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s;
+  touch-action: none;
+}
+
+.action-btn:active {
+  transform: scale(0.92);
+  background: radial-gradient(circle, #ff6622, #aa3300);
+}
+
+.cancel-btn {
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(circle, #ff4444, #aa0000);
+  border-color: #ff6666;
+  font-size: 1.2rem;
+  align-self: flex-end;
+}
+
+/* ============ Bottom Navigation ============ */
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: rgba(10, 10, 30, 0.85);
+  border-top: 1px solid rgba(100, 100, 200, 0.3);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 25;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #8899bb;
+  font-size: 0.6rem;
+  padding: 4px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-btn:active {
+  color: #ffee44;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  margin-bottom: 2px;
+}
+
+.nav-label {
+  font-size: 0.6rem;
+}
+
+/* ============ Modals ============ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 10px;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: linear-gradient(135deg, #1a1a3f, #111133);
+  border: 1px solid rgba(100, 100, 200, 0.4);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(100, 100, 200, 0.3);
+  background: rgba(50, 50, 100, 0.2);
+}
+
+.modal-header h2 {
+  font-size: 1.1rem;
+  color: #ffee44;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: #ff6666;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.modal-close:active {
+  background: rgba(255, 100, 100, 0.2);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============ Inventory ============ */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.inv-slot {
+  aspect-ratio: 1;
+  background: rgba(50, 50, 80, 0.5);
+  border: 2px solid rgba(100, 100, 150, 0.3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.inv-slot.filled {
+  background: rgba(80, 80, 120, 0.5);
+}
+
+.inv-slot.selected {
+  border-color: #ffee44;
+  background: rgba(100, 100, 50, 0.4);
+}
+
+.inv-emoji {
+  font-size: 1.2rem;
+}
+
+.inv-qty {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 0.55rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
+.item-details {
+  background: rgba(50, 50, 80, 0.4);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.item-details h3 {
+  color: #ffee44;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.item-details p {
+  color: #bbccee;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.item-val {
+  color: #ffdd44;
+  font-weight: bold;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tool-selector {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(50, 50, 80, 0.3);
+  border-radius: 8px;
+}
+
+.tool-selector h3 {
+  font-size: 0.85rem;
+  color: #aabbdd;
+  margin-bottom: 8px;
+}
+
+.tool-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool-btn {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  background: rgba(60, 60, 100, 0.5);
+  border: 1px solid rgba(100, 100, 150, 0.3);
+  color: #ccccee;
+  border-radius: 6px;
+}
+
+.tool-btn.active {
+  background: rgba(255, 238, 68, 0.2);
+  border-color: #ffee44;
+  color: #ffee44;
+}
+
+/* ============ Shop ============ */
+.shop-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  background: rgba(50, 50, 80, 0.5);
+  border: 1px solid rgba(100, 100, 150, 0.3);
+  color: #8899bb;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: rgba(255, 238, 68, 0.15);
+  border-color: #ffee44;
+  color: #ffee44;
+}
+
+.shop-money {
+  text-align: right;
+  color: #ffdd44;
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.shop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(50, 50, 80, 0.4);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.shop-item-icon {
+  font-size: 1.4rem;
+  width: 32px;
+  text-align: center;
+}
+
+.shop-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-item-name {
+  display: block;
+  color: #ddddee;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.shop-item-desc {
+  display: block;
+  color: #8899bb;
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-item-price {
+  color: #ffdd44;
+  font-size: 0.85rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.shop-empty {
+  text-align: center;
+  color: #8899bb;
+  padding: 20px;
+  font-size: 0.9rem;
+}
+
+.deco-hint {
+  color: #88aaff;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+/* ============ Crafting ============ */
+.crafting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.craft-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(50, 50, 80, 0.4);
+  border-radius: 8px;
+  padding: 10px;
+  flex-wrap: wrap;
+}
+
+.craft-item.locked {
+  opacity: 0.6;
+}
+
+.craft-output {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 100px;
+}
+
+.craft-icon {
+  font-size: 1.3rem;
+}
+
+.craft-name {
+  color: #ddddee;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.craft-inputs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.craft-input {
+  font-size: 0.7rem;
+  color: #8899bb;
+}
+
+.craft-input.have {
+  color: #88ff88;
+}
+
+.craft-input.need {
+  color: #ff8888;
+}
+
+/* ============ Quests ============ */
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quest-card {
+  background: rgba(50, 50, 80, 0.4);
+  border-radius: 10px;
+  padding: 12px;
+  border-left: 4px solid #666;
+}
+
+.quest-available {
+  border-left-color: #4488ff;
+}
+
+.quest-active {
+  border-left-color: #ffaa44;
+}
+
+.quest-completed {
+  border-left-color: #44ff44;
+}
+
+.quest-claimed {
+  border-left-color: #666;
+  opacity: 0.7;
+}
+
+.quest-title {
+  color: #ffee44;
+  font-weight: bold;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.quest-desc {
+  color: #bbccee;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.quest-objectives {
+  margin-bottom: 8px;
+}
+
+.quest-obj {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #8899bb;
+  margin-bottom: 2px;
+}
+
+.quest-obj.done {
+  color: #88ff88;
+  text-decoration: line-through;
+}
+
+.quest-obj-icon {
+  font-size: 0.9rem;
+}
+
+.quest-obj-progress {
+  color: #666688;
+  font-size: 0.7rem;
+}
+
+.quest-reward {
+  font-size: 0.75rem;
+  color: #ffdd44;
+  margin-bottom: 8px;
+}
+
+.reward-money {
+  font-weight: bold;
+}
+
+.reward-item {
+  margin-left: 4px;
+  color: #aabbdd;
+}
+
+.quest-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quest-status.active {
+  color: #ffaa44;
+  font-size: 0.8rem;
+}
+
+.quest-status.claimed {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+/* ============ Dialog ============ */
+.dialog-modal {
+  max-width: 380px;
+}
+
+.dialog-portrait {
+  padding: 16px;
+  text-align: center;
+  border-radius: 12px 12px 0 0;
+}
+
+.dialog-portrait-name {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-portrait-role {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-content {
+  padding: 16px;
+}
+
+.dialog-hearts {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.heart {
+  font-size: 0.9rem;
+  opacity: 0.3;
+}
+
+.heart.filled {
+  opacity: 1;
+}
+
+.dialog-text {
+  color: #ddddee;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  min-height: 60px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.gift-list {
+  margin-bottom: 16px;
+}
+
+.gift-list p {
+  color: #88aaff;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.gift-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.gift-item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(80, 80, 120, 0.5);
+  border: 1px solid rgba(100, 100, 150, 0.3);
+  border-radius: 8px;
+  font-size: 0.7rem;
+  color: #ccccee;
+  cursor: pointer;
+  min-width: 70px;
+}
+
+.gift-item-btn:active {
+  background: rgba(100, 100, 150, 0.5);
+}
+
+.gift-reaction {
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+/* ============ Notifications ============ */
+.notifications-container {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  width: 90%;
+  max-width: 360px;
+  align-items: center;
+}
+
+.notification {
+  background: rgba(10, 10, 30, 0.85);
+  border: 1px solid rgba(100, 100, 200, 0.4);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: center;
+  animation: notifSlide 0.3s ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  max-width: 100%;
+}
+
+.notif-success {
+  border-color: rgba(100, 255, 100, 0.4);
+  color: #aaffaa;
+}
+
+.notif-error {
+  border-color: rgba(255, 100, 100, 0.4);
+  color: #ffaaaa;
+}
+
+.notif-warning {
+  border-color: rgba(255, 200, 100, 0.4);
+  color: #ffddaa;
+}
+
+@keyframes notifSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============ Map ============ */
+.map-modal {
+  max-width: 360px;
+}
+
+.map-canvas {
+  display: block;
+  margin: 0 auto;
+  border: 1px solid rgba(100, 100, 200, 0.3);
+  border-radius: 8px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: #bbccee;
+  justify-content: center;
+}
+
+.map-npcs {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(100, 100, 200, 0.2);
+}
+
+.map-npcs p {
+  color: #88aaff;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.map-npc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.8rem;
+  color: #bbccee;
+  border-bottom: 1px solid rgba(50, 50, 80, 0.3);
+}
+
+/* ============ Buttons ============ */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  color: white;
+  font-weight: bold;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4488ff, #3366cc);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #44aa44, #228844);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff4444, #cc2222);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #666688, #444466);
+}
+
+.btn-buy {
+  background: linear-gradient(135deg, #44aa44, #228844);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.btn-sell {
+  background: linear-gradient(135deg, #ffaa44, #cc8822);
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.btn-craft {
+  background: linear-gradient(135deg, #aa66ff, #8844cc);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* ============ Responsive Adjustments ============ */
+@media (max-width: 380px) {
+  .inventory-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .action-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 0.8rem;
+  }
+  .joystick {
+    width: 100px;
+    height: 100px;
+  }
+  .joystick-knob {
+    width: 42px;
+    height: 42px;
+    margin: -21px 0 0 -21px;
+  }
+  .hud-item {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+  .nav-label {
+    font-size: 0.55rem;
+  }
+  .nav-icon {
+    font-size: 1.1rem;
+  }
+  .modal {
+    max-width: 100%;
+    max-height: 90vh;
+  }
+}
+
+@media (min-width: 768px) {
+  .touch-controls {
+    bottom: 80px;
+  }
+  .jooystick {
+    width: 140px;
+    height: 140px;
+  }
+  .action-btn {
+    width: 90px;
+    height: 90px;
+  }
+  .hud {
+    top: 16px;
+    left: 16px;
+    right: 16px;
+  }
+  .hud-item {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+  }
+}
+
+/* ============ Scrollbar Styling ============ */
+.modal-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(50, 50, 80, 0.3);
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 200, 0.4);
+  border-radius: 2px;
+}

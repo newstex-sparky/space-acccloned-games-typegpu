@@ -1,108 +1,232 @@
-import * as React from 'react'
-import './components/App.css'
-import { GameStateDisplay, ActionButtons, AppContainer } from './components/AppContainer'
-import { InputSystem } from '../systems/GameSystems'
-import { GameWorld, TypeGPURenderer } from '../engine'
-import { ColonySystem, VillagerSystem, ResourceSystem, TimeSystem } from '../systems/GameSystems'
-import { GameState, BuildingType } from '../types/game'
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { GameEngine } from './engine/GameEngine';
+import type { GameScreen, Notification, NPCId, FishingState } from './engine/types';
+import { GameCanvas } from './components/GameCanvas';
+import { HUD } from './components/HUD';
+import { TouchControls } from './components/TouchControls';
+import { InventoryModal } from './components/InventoryModal';
+import { ShopModal } from './components/ShopModal';
+import { CraftingModal } from './components/CraftingModal';
+import { QuestModal } from './components/QuestModal';
+import { DialogModal } from './components/DialogModal';
+import { Notifications } from './components/Notifications';
+import { WORLD_W, WORLD_H, TILE_SIZE } from './engine/World';
+import { NPCS } from './engine/npcs';
+import { ITEMS } from './engine/items';
 
-interface AppProps {
-  world: GameWorld
-  colony: ColonySystem
-  villagers: VillagerSystem
-  resources: ResourceSystem
-  time: TimeSystem
-  input: InputSystem
-  renderer: TypeGPURenderer
-}
+export function App() {
+  const [, forceUpdate] = useState({});
+  const [screen, setScreen] = useState<GameScreen | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [activeNPC, setActiveNPC] = useState<NPCId | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [showStart, setShowStart] = useState(true);
+  const engineRef = useRef<GameEngine | null>(null);
 
-export const App: React.FC<AppProps> = ({
-  world,
-  colony,
-  villagers,
-  resources,
-  time,
-  input,
-  renderer
-}) => {
-  const [gameState, setGameState] = React.useState<GameState>(colony.getGameState())
-  const [showInventory, setShowInventory] = React.useState(false)
-  const [controllerConnected, setControllerConnected] = React.useState(false)
-  const [controllerType, setControllerType] = React.useState<string | null>(null)
-
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setGameState(colony.getGameState())
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [colony])
-
-  React.useEffect(() => {
-    const checkController = setInterval(() => {
-      const activeGamepad = input.getActiveGamepad()
-      if (activeGamepad) {
-        if (!controllerConnected) {
-          setControllerConnected(true)
-          setControllerType(input.getControllerType())
-        }
-      } else {
-        setControllerConnected(false)
-      }
-    }, 500)
-    return () => clearInterval(checkController)
-  }, [input, controllerConnected])
-
-  const handleGather = () => {
-    colony.gatherResources()
+  // Initialize engine
+  if (!engineRef.current) {
+    engineRef.current = new GameEngine({
+      onStateChange: () => forceUpdate({}),
+      onNotification: (n) => {
+        setNotifications(prev => [...prev, n]);
+      },
+      onScreenChange: (s) => setScreen(s),
+      onDialogChange: (npcId) => setActiveNPC(npcId),
+      onFishingChange: (_state: FishingState) => forceUpdate({}),
+    });
   }
 
-  const handleBuild = (type: BuildingType) => {
-    const position = { x: (Math.random() - 0.5) * 6, z: (Math.random() - 0.5) * 6 }
-    colony.addBuilding(type, position)
-  }
+  const engine = engineRef.current;
 
-  const addRandomVillager = () => {
-    const names = ['Nova', 'Cora', 'Quinn', 'Rex', 'Zara', 'Luna', 'Atlas', 'Nebula']
-    const name = names[Math.floor(Math.random() * names.length)]
-    villagers.addVillager(name)
+  useEffect(() => {
+    engine.start();
+    return () => engine.stop();
+  }, [engine]);
+
+  // Clear notifications after they display
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const timers = notifications.map(n =>
+        setTimeout(() => {
+          setNotifications(prev => prev.filter(nn => nn.id !== n.id));
+        }, n.timeout)
+      );
+      return () => timers.forEach(t => clearTimeout(t));
+    }
+  }, [notifications]);
+
+  const handleCloseScreen = useCallback(() => {
+    engine.closeScreen();
+    setScreen(null);
+  }, [engine]);
+
+  const handleCloseDialog = useCallback(() => {
+    engine.closeDialog();
+    setActiveNPC(null);
+  }, [engine]);
+
+  const handleNavTab = (tab: 'inventory' | 'shop' | 'crafting' | 'quests' | 'map') => {
+    if (tab === 'map') {
+      setShowMap(true);
+    } else {
+      engine.openScreen(tab);
+    }
+  };
+
+  const startGame = () => {
+    setShowStart(false);
+  };
+
+  if (showStart) {
+    return (
+      <div className="start-screen">
+        <div className="start-content">
+          <h1>🌱 Space Harvest 🚀</h1>
+          <p className="start-subtitle">A Stardew Valley Adventure in Space</p>
+          <div className="start-features">
+            <p>🌾 Farm cosmic crops across 4 space seasons</p>
+            <p>⛏️ Explore deep space mines for rare ores</p>
+            <p>🎣 Catch exotic space fish</p>
+            <p>🤝 Befriend 4 unique colonists</p>
+            <p>🔨 Craft tools and decorations</p>
+            <p>📋 Complete quests for rewards</p>
+          </div>
+          <button className="btn-start" onClick={startGame}>Start Colony</button>
+          <p className="start-hint">Best played on mobile with touch controls!</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <AppContainer>
-      {controllerConnected && (
-        <div className="controller-connected">
-          🎮 {controllerType?.toUpperCase()} Controller Connected
-        </div>
-      )}
+    <div className="game-container">
+      <GameCanvas engine={engine} />
+      <div className="ui-layer">
+        <HUD engine={engine} />
+        <Notifications notifications={notifications} />
 
-      <GameStateDisplay
-        gameState={gameState}
-        showInventory={showInventory}
-        onToggleInventory={() => setShowInventory(!showInventory)}
-      />
+        {!screen && !activeNPC && (
+          <TouchControls engine={engine} />
+        )}
 
-      {showInventory && (
-        <div className="inventory-panel">
-          <h3>🎒 Space Colony Inventory</h3>
-          <p>Ore: {gameState.resources.ore}</p>
-          <p>Water: {gameState.resources.water}</p>
-          <p>Energy: {gameState.resources.energy}</p>
-          <p>Buildings: {gameState.buildings.length}</p>
-          <p>Colonists: {gameState.villagerCount}</p>
-        </div>
-      )}
+        {/* Bottom navigation */}
+        {!screen && !activeNPC && (
+          <div className="bottom-nav">
+            <button className="nav-btn" onClick={() => handleNavTab('inventory')}>
+              <span className="nav-icon">🎒</span>
+              <span className="nav-label">Bag</span>
+            </button>
+            <button className="nav-btn" onClick={() => handleNavTab('shop')}>
+              <span className="nav-icon">🏪</span>
+              <span className="nav-label">Shop</span>
+            </button>
+            <button className="nav-btn" onClick={() => handleNavTab('crafting')}>
+              <span className="nav-icon">🔨</span>
+              <span className="nav-label">Craft</span>
+            </button>
+            <button className="nav-btn" onClick={() => handleNavTab('quests')}>
+              <span className="nav-icon">📋</span>
+              <span className="nav-label">Quests</span>
+            </button>
+            <button className="nav-btn" onClick={() => handleNavTab('map')}>
+              <span className="nav-icon">🗺️</span>
+              <span className="nav-label">Map</span>
+            </button>
+          </div>
+        )}
 
-      <ActionButtons
-        onGather={handleGather}
-        onBuild={handleBuild}
-        onAddVillager={addRandomVillager}
-        controllerConnected={controllerConnected}
-      />
+        {/* Modals */}
+        {screen === 'inventory' && <InventoryModal engine={engine} onClose={handleCloseScreen} />}
+        {screen === 'shop' && <ShopModal engine={engine} onClose={handleCloseScreen} />}
+        {screen === 'crafting' && <CraftingModal engine={engine} onClose={handleCloseScreen} />}
+        {screen === 'quests' && <QuestModal engine={engine} onClose={handleCloseScreen} />}
+        {activeNPC && <DialogModal engine={engine} onClose={handleCloseDialog} />}
 
-      <div className="villager-list">
-        <h3>🦊 Space Crew ({gameState.villagerCount})</h3>
-        {gameState.villagerCount === 0 && <p>No colonists yet</p>}
+        {/* Map overlay */}
+        {showMap && <MapModal engine={engine} onClose={() => setShowMap(false)} />}
       </div>
-    </AppContainer>
-  )
+    </div>
+  );
+}
+
+// Simple map modal
+function MapModal({ engine, onClose }: { engine: GameEngine; onClose: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const scale = Math.min(300 / WORLD_W, 300 / WORLD_H);
+    canvas.width = WORLD_W * scale;
+    canvas.height = WORLD_H * scale;
+
+    const world = engine.world;
+    for (let y = 0; y < WORLD_H; y++) {
+      for (let x = 0; x < WORLD_W; x++) {
+        const t = world.tiles[y][x];
+        let color = '#226633';
+        if (t.type === 'water') color = '#2244aa';
+        else if (t.type === 'wall') color = '#332255';
+        else if (t.type === 'rock') color = '#776655';
+        else if (t.type === 'path') color = '#887766';
+        else if (t.type === 'floor') color = '#554433';
+        else if (t.type === 'tilled' || t.type === 'crop') color = '#553311';
+        if (t.decorationId === 'house') color = '#aa6644';
+        if (t.decorationId === 'shop') color = '#4488ff';
+        if (t.decorationId === 'mine_entrance') color = '#ff8800';
+        ctx.fillStyle = color;
+        ctx.fillRect(x * scale, y * scale, scale, scale);
+      }
+    }
+
+    // Draw NPCs
+    for (const npcId of Object.keys(engine.npcs) as any[]) {
+      const npc = engine.npcs[npcId];
+      const def = NPCS[npcId];
+      ctx.fillStyle = def.color;
+      ctx.fillRect(npc.pos.x * scale - 1, npc.pos.y * scale - 1, scale + 2, scale + 2);
+    }
+
+    // Draw player
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(engine.player.pos.x * scale - 1, engine.player.pos.y * scale - 1, scale + 2, scale + 2);
+  }, [engine]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal map-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>🗺️ Station Map</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <canvas ref={canvasRef} className="map-canvas" />
+          <div className="map-legend">
+            <div><span style={{ color: '#ffff00' }}>●</span> You</div>
+            <div><span style={{ color: '#aa6644' }}>●</span> Home</div>
+            <div><span style={{ color: '#4488ff' }}>●</span> Shop</div>
+            <div><span style={{ color: '#ff8800' }}>●</span> Mine</div>
+            <div><span style={{ color: '#2244aa' }}>●</span> Lake</div>
+          </div>
+          <div className="map-npcs">
+            <p>Colonists on the station:</p>
+            {Object.keys(engine.npcs).map((id) => {
+              const npc = engine.npcs[id as NPCId];
+              const def = NPCS[id as NPCId];
+              return (
+                <div key={id} className="map-npc">
+                  <span style={{ color: def.color }}>●</span>
+                  <span>{def.name} - {def.role}</span>
+                  <span>❤️ {engine.getNPCHearts(id as NPCId)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
