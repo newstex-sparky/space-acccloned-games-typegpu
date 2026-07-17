@@ -29,19 +29,28 @@ export function InventoryModal({ engine, onClose }: Props) {
         engine.player.setTool('sword');
         engine.notify('Equipped Laser Sword', 'info');
         refresh();
+      } else if (slot.item.itemId === 'pickaxe_upgrade') {
+        engine.player.setTool('pickaxe');
+        engine.notify('Equipped Steel Pickaxe!', 'info');
+        refresh();
       }
     } else if (item.category === 'misc' && slot.item.itemId === 'energy_drink') {
-      engine.player.removeItem('energy_drink', 1);
-      engine.player.restoreEnergy(30);
-      engine.notify('Restored 30 energy!', 'success');
+      engine.eatFood('energy_drink');
       refresh();
     } else if (item.category === 'crafted' && slot.item.itemId === 'space_soup') {
-      engine.player.removeItem('space_soup', 1);
-      engine.player.restoreEnergy(50);
-      engine.notify('Restored 50 energy!', 'success');
+      engine.eatFood('space_soup');
+      refresh();
+    } else if (item.category === 'food') {
+      // Cooked foods — eat for energy
+      engine.eatFood(slot.item.itemId);
       refresh();
     } else if (item.category === 'crafted' && slot.item.itemId === 'bomb') {
       engine.notify('Bombs are used in the mine!', 'info');
+    } else if (item.category === 'furniture') {
+      // Start house decoration placement
+      engine.startHouseDecorationMode(slot.item.itemId);
+      refresh();
+      onClose();
     }
   };
 
@@ -68,7 +77,7 @@ export function InventoryModal({ engine, onClose }: Props) {
               return (
                 <div
                   key={idx}
-                  className={`inv-slot ${selectedIdx === idx ? 'selected' : ''} ${slot.item ? 'filled' : 'empty'}`}
+                  className={`inv-slot ${selectedIdx === idx ? 'selected' : ''} ${slot.item ? 'filled' : 'empty'} ${item ? `cat-${item.category}` : ''}`}
                   onClick={() => setSelectedIdx(selectedIdx === idx ? null : idx)}
                 >
                   {item && (
@@ -89,14 +98,19 @@ export function InventoryModal({ engine, onClose }: Props) {
               {(() => {
                 const slot = engine.player.inventory[selectedIdx];
                 const item = ITEMS[slot!.item!.itemId];
+                const canUse = item.category === 'tool' || item.category === 'misc' ||
+                  item.category === 'crafted' || item.category === 'food' || item.category === 'furniture';
+                const useLabel = item.category === 'food' ? 'Eat' :
+                  item.category === 'furniture' ? 'Place' :
+                  item.category === 'tool' ? 'Equip' : 'Use';
                 return (
                   <>
                     <h3>{item.emoji} {item.name}</h3>
                     <p>{item.description}</p>
                     {item.sellValue > 0 && <p className="item-val">Sell: {item.sellValue}g</p>}
                     <div className="item-actions">
-                      {(item.category === 'tool' || item.category === 'misc' || item.category === 'crafted') && (
-                        <button className="btn btn-primary" onClick={() => handleUseItem(selectedIdx)}>Use</button>
+                      {canUse && (
+                        <button className="btn btn-primary" onClick={() => handleUseItem(selectedIdx)}>{useLabel}</button>
                       )}
                       <button className="btn btn-danger" onClick={() => handleDropItem(selectedIdx)}>Drop</button>
                     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { GameEngine } from '../engine/GameEngine';
 import { TILE_SIZE } from '../engine/World';
-import { CROPS, ITEMS, DECORATIONS } from '../engine/items';
+import { CROPS, ITEMS, DECORATIONS, BUILDINGS } from '../engine/items';
 import { NPCS } from '../engine/npcs';
 
 interface Props {
@@ -78,7 +78,7 @@ export function GameCanvas({ engine }: Props) {
       }
 
       // Draw NPCs (only in overworld)
-      if (!world.isInMine()) {
+      if (!world.isInMine() && !world.isInHouse()) {
         for (const npcId of Object.keys(eng.npcs) as any[]) {
           const npc = eng.npcs[npcId];
           const def = NPCS[npcId];
@@ -88,6 +88,9 @@ export function GameCanvas({ engine }: Props) {
             drawNPC(ctx, def.color, px, py, npc.name);
           }
         }
+
+        // Draw buildings (only in overworld)
+        drawBuildings(ctx, eng, camX, camY);
       }
 
       // Draw player
@@ -251,6 +254,38 @@ function drawTile(ctx: CanvasRenderingContext2D, tile: any, px: number, py: numb
       }
       break;
 
+    case 'house_interior':
+      // Wooden floor
+      ctx.fillStyle = '#8a5a2b';
+      ctx.fillRect(px, py, sz, sz);
+      ctx.strokeStyle = '#6a4a1b';
+      ctx.lineWidth = 1;
+      // Plank lines
+      ctx.beginPath();
+      ctx.moveTo(px, py + sz / 2);
+      ctx.lineTo(px + sz, py + sz / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(px + sz / 2, py);
+      ctx.lineTo(px + sz / 2, py + sz / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(px + sz / 4, py + sz / 2);
+      ctx.lineTo(px + sz / 4, py + sz);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(px + 3 * sz / 4, py + sz / 2);
+      ctx.lineTo(px + 3 * sz / 4, py + sz);
+      ctx.stroke();
+      break;
+
+    case 'building':
+      // Building base — the actual structure is drawn separately
+      // by drawBuildings() so here we just draw a dark pad
+      ctx.fillStyle = '#443322';
+      ctx.fillRect(px, py, sz, sz);
+      break;
+
     case 'tilled':
       ctx.fillStyle = '#553311';
       ctx.fillRect(px, py, sz, sz);
@@ -376,6 +411,9 @@ function drawTile(ctx: CanvasRenderingContext2D, tile: any, px: number, py: numb
       } else {
         ctx.fillRect(px + 6, py + 6, sz - 12, sz - 12);
       }
+    } else {
+      // House interior furniture
+      drawFurniture(ctx, tile.decorationId, px, py, sz);
     }
   }
 
@@ -437,4 +475,140 @@ function drawNPC(ctx: CanvasRenderingContext2D, color: string, px: number, py: n
   ctx.font = '8px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(name, px + sz / 2, py - 4);
+}
+
+// ============ House Interior Furniture ============
+function drawFurniture(ctx: CanvasRenderingContext2D, id: string | null, px: number, py: number, sz: number) {
+  if (!id) return;
+  switch (id) {
+    case 'bed':
+      ctx.fillStyle = '#cc8899';
+      ctx.fillRect(px + 2, py + 4, sz - 4, sz - 8);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(px + 4, py + 6, sz / 2 - 6, sz - 16);
+      break;
+    case 'table':
+      ctx.fillStyle = '#885533';
+      ctx.fillRect(px + 4, py + 6, sz - 8, sz - 12);
+      ctx.fillStyle = '#aa7744';
+      ctx.fillRect(px + 6, py + 6, sz - 12, 4);
+      break;
+    case 'chair':
+      ctx.fillStyle = '#bb8855';
+      ctx.fillRect(px + 8, py + 8, sz - 16, sz - 16);
+      ctx.fillStyle = '#996644';
+      ctx.fillRect(px + 8, py + 4, 4, sz - 12);
+      break;
+    case 'chest':
+      ctx.fillStyle = '#aa6633';
+      ctx.fillRect(px + 4, py + 8, sz - 8, sz - 14);
+      ctx.fillStyle = '#ffdd44';
+      ctx.fillRect(px + sz / 2 - 2, py + 10, 4, 4);
+      break;
+    case 'counter':
+      ctx.fillStyle = '#998877';
+      ctx.fillRect(px + 2, py + 8, sz - 4, sz - 12);
+      ctx.fillStyle = '#bbabaa';
+      ctx.fillRect(px + 2, py + 8, sz - 4, 4);
+      break;
+    case 'stove':
+      ctx.fillStyle = '#666677';
+      ctx.fillRect(px + 4, py + 4, sz - 8, sz - 8);
+      ctx.fillStyle = '#ff4422';
+      ctx.beginPath();
+      ctx.arc(px + sz / 2, py + sz / 2, 5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'door':
+      ctx.fillStyle = '#553322';
+      ctx.fillRect(px + 4, py + 2, sz - 8, sz - 4);
+      ctx.fillStyle = '#ffdd44';
+      ctx.fillRect(px + sz / 2 - 2, py + sz / 2 - 2, 4, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '7px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('EXIT', px + sz / 2, py + sz - 6);
+      break;
+    case 'lamp':
+      ctx.fillStyle = '#444455';
+      ctx.fillRect(px + sz / 2 - 2, py + 10, 4, sz - 14);
+      ctx.fillStyle = '#ffee66';
+      ctx.beginPath();
+      ctx.arc(px + sz / 2, py + 8, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255, 255, 100, 0.3)';
+      ctx.beginPath();
+      ctx.arc(px + sz / 2, py + 8, 12, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'rug':
+      ctx.fillStyle = 'rgba(204, 68, 102, 0.6)';
+      ctx.fillRect(px + 2, py + 2, sz - 4, sz - 4);
+      ctx.strokeStyle = '#aa3355';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px + 4, py + 4, sz - 8, sz - 8);
+      break;
+    case 'plant_pot':
+      ctx.fillStyle = '#aa6644';
+      ctx.fillRect(px + 10, py + 14, sz - 20, sz - 20);
+      ctx.fillStyle = '#44aa66';
+      ctx.beginPath();
+      ctx.arc(px + sz / 2, py + 10, 6, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'shelf':
+      ctx.fillStyle = '#996644';
+      ctx.fillRect(px + 2, py + 4, sz - 4, sz - 8);
+      ctx.fillStyle = '#774422';
+      ctx.fillRect(px + 2, py + sz / 3 + 4, sz - 4, 2);
+      ctx.fillRect(px + 2, py + 2 * sz / 3 + 4, sz - 4, 2);
+      break;
+    case 'tv':
+      ctx.fillStyle = '#222244';
+      ctx.fillRect(px + 4, py + 6, sz - 8, sz - 14);
+      ctx.fillStyle = '#4488aa';
+      ctx.fillRect(px + 7, py + 9, sz - 14, sz - 22);
+      break;
+    default:
+      // Generic furniture from inventory items (placed by player)
+      if (ITEMS[id]) {
+        const item = ITEMS[id];
+        ctx.fillStyle = item.color;
+        ctx.fillRect(px + 6, py + 6, sz - 12, sz - 12);
+      }
+      break;
+  }
+}
+
+// ============ Buildings on the Overworld ============
+function drawBuildings(ctx: CanvasRenderingContext2D, engine: any, camX: number, camY: number) {
+  const world = engine.world;
+  if (!world.buildings || world.buildings.length === 0) return;
+  for (const b of world.buildings) {
+    const def = BUILDINGS[b.type];
+    if (!def) continue;
+    const px = Math.round(b.x * TILE_SIZE - camX);
+    const py = Math.round(b.y * TILE_SIZE - camY);
+    const w = def.width * TILE_SIZE;
+    const h = def.height * TILE_SIZE;
+    // Building body
+    ctx.fillStyle = def.color;
+    ctx.fillRect(px, py, w, h);
+    // Roof
+    ctx.fillStyle = def.roofColor;
+    ctx.beginPath();
+    ctx.moveTo(px - 4, py);
+    ctx.lineTo(px + w + 4, py);
+    ctx.lineTo(px + w / 2, py - 12);
+    ctx.closePath();
+    ctx.fill();
+    // Door
+    ctx.fillStyle = '#332211';
+    ctx.fillRect(px + w / 2 - 6, py + h - 16, 12, 16);
+    // Label emoji
+    ctx.font = `${Math.max(14, TILE_SIZE * 0.6)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(def.emoji, px + w / 2, py + h / 2 + 6);
+    ctx.textAlign = 'left';
+  }
 }

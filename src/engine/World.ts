@@ -1,11 +1,14 @@
-import type { Tile, TileType, Vec2, Season, OreType } from './types';
-import { CROPS } from './items';
+import type { Tile, TileType, Vec2, Season, OreType, PlacedBuilding, BuildingType, HouseFurnitureType } from './types';
+import { CROPS, BUILDINGS } from './items';
 
 export const WORLD_W = 48;
 export const WORLD_H = 48;
 export const TILE_SIZE = 32;
 
 const FARM_AREA = { x: 8, y: 8, w: 16, h: 16 };
+
+// House position on the overworld map (must match generateWorld)
+export const HOUSE_POS = { x: 10, y: 4 };
 
 export class World {
   tiles: Tile[][];
@@ -17,6 +20,18 @@ export class World {
   mineTiles: Tile[][] | null = null;
   mineW = 24;
   mineH = 24;
+
+  // House interior
+  houseLevel = 0;
+  houseTiles: Tile[][] | null = null;
+  houseW = 14;
+  houseH = 12;
+
+  // Player position inside the house, restored on exit
+  houseExitPos: Vec2 = { x: HOUSE_POS.x, y: HOUSE_POS.y + 1 };
+
+  // Placed buildings on the overworld
+  buildings: PlacedBuilding[] = [];
 
   // Forage spawn tracking
   forageSpawned: Vec2[] = [];
@@ -139,11 +154,20 @@ export class World {
   }
 
   isWalkable(x: number, y: number): boolean {
-    const t = this.getTile(x, y);
+    // Use the currently active tile set (overworld / mine / house)
+    let t: Tile | null;
+    if (this.isInMine()) {
+      t = this.getMineTile(x, y);
+    } else if (this.isInHouse()) {
+      t = this.getHouseTile(x, y);
+    } else {
+      t = this.getTile(x, y);
+    }
     if (!t) return false;
     if (t.occupied) return false;
     if (t.type === 'water' || t.type === 'wall' || t.type === 'rock') return false;
     if (t.type === 'mine_rock') return false;
+    if (t.type === 'building') return false;
     return true;
   }
 
@@ -329,15 +353,169 @@ export class World {
     return this.mineLevel > 0;
   }
 
+  isInHouse(): boolean {
+    return this.houseLevel > 0;
+  }
+
+  // ============ House Interior ============
+  enterHouse(): void {
+    this.houseLevel = 1;
+    if (!this.houseTiles) {
+      this.houseTiles = this.generateHouseInterior();
+    }
+  }
+
+  exitHouse(): void {
+    this.houseLevel = 0;
+  }
+
+  getHouseTile(x: number, y: number): Tile | null {
+    if (!this.houseTiles) return null;
+    if (x < 0 || x >= this.houseW || y < 0 || y >= this.houseH) return null;
+    return this.houseTiles[y][x];
+  }
+
+  private generateHouseInterior(): Tile[][] {
+    const tiles: Tile[][] = [];
+    const W = this.houseW;
+    const H = this.houseH;
+
+    // Fill with interior floor
+    for (let y = 0; y < H; y++) {
+      tiles[y] = [];
+      for (let x = 0; x < W; x++) {
+        tiles[y][x] = this.makeTile('house_interior');
+        // Interior floor is walkable by default
+        tiles[y][x].occupied = false;
+      }
+    }
+
+    // Walls around the edge
+    for (let x = 0; x < W; x++) {
+      tiles[0][x] = this.makeTile('wall');
+      tiles[H - 1][x] = this.makeTile('wall');
+    }
+    for (let y = 0; y < H; y++) {
+      tiles[y][0] = this.makeTile('wall');
+      tiles[y][W - 1] = this.makeTile('wall');
+    }
+
+    // Place furniture using decorationId on interior tiles
+    const place = (x: number, y: number, type: HouseFurnitureType) => {
+      if (y >= 0 && y < H && x >= 0 && x < W) {
+        tiles[y][x].decorationId = type;
+        tiles[y][x].occupied = true;
+      }
+    };
+
+    // Bed (top-left corner)
+    place(2, 1, 'bed');
+    place(3, 1, 'bed');
+
+    // Table and chairs (center)
+    place(6, 5, 'table');
+    place(5, 5, 'chair');
+    place(7, 5, 'chair');
+    place(6, 4, 'chair');
+
+    // Storage chest (right side)
+    place(11, 2, 'chest');
+
+    // Kitchen counter + stove (right side, bottom)
+    place(11, 6, 'counter');
+    place(11, 7, 'stove');
+    place(10, 7, 'counter');
+
+    // A rug near the table
+    place(6, 6, 'rug');
+    // Re-mark rug as walkable decoration (visual only)
+    tiles[6][6].occupied = false;
+
+    // Lamp near the door
+    place(1, 1, 'lamp');
+
+    // Door at bottom-center to exit to overworld
+    tiles[H - 1][Math.floor(W / 2)] = this.makeTile('house_interior');
+    tiles[H - 1][Math.floor(W / 2)].decorationId = 'door';
+    tiles[H - 1][Math.floor(W / 2)].occupied = false; // walkable so we can stand on it
+
+    return tiles;
+  }
+
+  // Place a piece of furniture/decoration inside the house interior on a floor tile
+  placeHouseDecoration(x: number, y: number, decorationId: string): boolean {
+    const t = this.getHouseTile(x, y);
+    if (!t) return false;
+    if (t.type !== 'house_interior') return false;
+    if (t.occupied) return false;
+    if (t.decorationId) return false;
+    t.decorationId = decorationId;
+    // Rugs remain walkable; other furniture blocks the tile
+    if (decorationId !== 'rug') {
+      t.occupied = true;
+    }
+    return true;
+  }
+
+  // ============ Buildings ============
+  placeBuilding(x: number, y: number, buildingType: BuildingType): boolean {
+    const def = BUILDINGS[buildingType];
+    const w = def?.width ?? 1;
+    const h = def?.height ?? 1;
+
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        const t = this.getTile(x + dx, y + dy);
+        if (!t) return false;
+        if (t.occupied) return false;
+        if (t.type !== 'grass' && t.type !== 'floor') return false;
+      }
+    }
+
+    // Place building
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        const t = this.getTile(x + dx, y + dy)!;
+        t.type = 'building';
+        t.occupied = true;
+        t.decorationId = null;
+      }
+    }
+    const id = `${buildingType}_${this.buildings.length}`;
+    this.buildings.push({ id, type: buildingType, x, y });
+    return true;
+  }
+
+  // Check whether a building can be placed at (x, y)
+  canPlaceBuilding(x: number, y: number, buildingType: BuildingType): boolean {
+    const def = BUILDINGS[buildingType];
+    if (!def) return false;
+    for (let dy = 0; dy < def.height; dy++) {
+      for (let dx = 0; dx < def.width; dx++) {
+        const t = this.getTile(x + dx, y + dy);
+        if (!t) return false;
+        if (t.occupied) return false;
+        if (t.type !== 'grass' && t.type !== 'floor') return false;
+      }
+    }
+    return true;
+  }
+
   getActiveTiles(): Tile[][] {
-    return this.isInMine() && this.mineTiles ? this.mineTiles : this.tiles;
+    if (this.isInMine() && this.mineTiles) return this.mineTiles;
+    if (this.isInHouse() && this.houseTiles) return this.houseTiles;
+    return this.tiles;
   }
 
   getActiveWidth(): number {
-    return this.isInMine() ? this.mineW : this.width;
+    if (this.isInMine()) return this.mineW;
+    if (this.isInHouse()) return this.houseW;
+    return this.width;
   }
 
   getActiveHeight(): number {
-    return this.isInMine() ? this.mineH : this.height;
+    if (this.isInMine()) return this.mineH;
+    if (this.isInHouse()) return this.houseH;
+    return this.height;
   }
 }

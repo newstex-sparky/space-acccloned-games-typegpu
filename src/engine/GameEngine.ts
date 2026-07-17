@@ -1,10 +1,14 @@
 import type {
   GameScreen, Notification, EngineCallbacks, NPCId, Quest, ItemStack,
-  FishingState, Season, GameTime, Tool, Vec2, Tile,
+  FishingState, Season, GameTime, Tool, Vec2, Tile, BuildingType,
 } from './types';
 import { World } from './World';
+import { HOUSE_POS } from './World';
 import { Player } from './Player';
-import { CROPS, ITEMS, RECIPES, SHOP_STOCK, FISH, FISH_POOL, ORE_DROPS, DECORATIONS, getItemBuyValue, getItemSellValue } from './items';
+import {
+  CROPS, ITEMS, RECIPES, SHOP_STOCK, FISH, FISH_POOL, ORE_DROPS, DECORATIONS,
+  getItemBuyValue, getItemSellValue, BUILDINGS, COOKING_RECIPES,
+} from './items';
 import { createNPCStates, NPCS, getGiftReaction, getGiftPoints, getReactionText } from './npcs';
 import { createInitialQuests } from './quests';
 
@@ -38,6 +42,12 @@ export class GameEngine {
   running = false;
   rafId: number | null = null;
   decorationMode: string | null = null;
+  // House decoration placement (inside the house interior)
+  houseDecorationMode: string | null = null;
+  // Build mode — when set, the next action places this building type
+  buildMode: BuildingType | null = null;
+  // Pending seed selection position for planting
+  pendingPlant: Vec2 | null = null;
   currentDialog: { npcId: NPCId; text: string; mode: 'talk' | 'gift' } | null = null;
   talkedNpcs: Set<NPCId> = new Set();
 
@@ -176,6 +186,31 @@ export class GameEngine {
   // ============ Actions ============
   performAction(): void {
     const facing = this.player.getFacingTile();
+
+    // House interior interactions take priority when inside the house
+    if (this.world.isInHouse()) {
+      this.handleHouseAction(facing);
+      return;
+    }
+
+    // Build mode: place a building on the facing tile
+    if (this.buildMode) {
+      this.placeBuildingAt(facing.x, facing.y, this.buildMode);
+      return;
+    }
+
+    // House decoration placement mode (when inside the house)
+    if (this.houseDecorationMode) {
+      const placed = this.world.placeHouseDecoration(facing.x, facing.y, this.houseDecorationMode);
+      if (placed) {
+        this.notify(`Placed ${ITEMS[this.houseDecorationMode]?.name ?? this.houseDecorationMode}!`, 'success');
+        this.houseDecorationMode = null;
+      } else {
+        this.notify('Cannot place there!', 'error');
+      }
+      return;
+    }
+
     const tile = this.world.isInMine() ? this.world.getMineTile(facing.x, facing.y) : this.world.getTile(facing.x, facing.y);
     if (!tile) return;
 
@@ -211,9 +246,9 @@ export class GameEngine {
       return;
     }
 
-    // House / bed
+    // House — enter the interior
     if (tile.decorationId === 'house') {
-      this.sleep();
+      this.enterHouse();
       return;
     }
 
@@ -273,19 +308,13 @@ export class GameEngine {
       if (!tile.watered) {
         this.waterTile(facing.x, facing.y);
       } else {
-        // Try to plant selected item
-        const sel = this.player.getSelectedItem();
-        if (sel && ITEMS[sel.itemId]?.category === 'seed') {
-          const cropId = sel.itemId.replace('_seed', '');
-          if (this.world.plantCrop(facing.x, facing.y, cropId, this.gameTime.season)) {
-            this.player.removeItem(sel.itemId, 1);
-            this.notify(`Planted ${CROPS[cropId].name}!`, 'success');
-            this.player.consumeEnergy(2);
-          } else {
-            this.notify(`Can't grow ${CROPS[cropId]?.name ?? cropId} in ${SEASON_NAMES[this.gameTime.season]} season!`, 'warning');
-          }
+        // Open the seed selection modal
+        const seeds = this.getAvailableSeeds();
+        if (seeds.length === 0) {
+          this.notify('No seeds! Buy some at the shop.', 'warning');
         } else {
-          this.notify('Select seeds to plant here!', 'info');
+          this.pendingPlant = { x: facing.x, y: facing.y };
+          this.openScreen('seed_select');
         }
       }
       return;
@@ -308,8 +337,14 @@ export class GameEngine {
     // Rock in overworld
     if (tile.type === 'rock') {
       if (this.player.consumeEnergy(3)) {
-        this.player.addItem('stone', 1);
-        this.notify('Mined some stone.', 'info');
+        // 50% chance to get wood, 50% chance to get stone
+        if (Math.random() < 0.5) {
+          this.player.addItem('wood', 1);
+          this.notify('Chopped some wood.', 'info');
+        } else {
+          this.player.addItem('stone', 1);
+          this.notify('Mined some stone.', 'info');
+        }
       }
       return;
     }
@@ -355,6 +390,227 @@ export class GameEngine {
     } else {
       this.notify('Too tired to water!', 'warning');
     }
+  }
+
+  // ============ House Interior ============
+  enterHouse(): void {
+    // Save the overworld position to return to
+    this.world.houseExitPos = { x: HOUSE_POS.x + 1, y: HOUSE_POS.y + 2 };
+    this.world.enterHouse();
+    // Place player at the door (bottom-center of the interior)
+    const doorX = Math.floor(this.world.houseW / 2);
+    const doorY = this.world.houseH - 2;
+    this.player.pos = { x: doorX, y: doorY };
+    this.player.pixelPos = { x: doorX * 32, y: doorY * 32 };
+    this.notify('Entered your home. 🏠', 'info');
+  }
+
+  exitHouse(): void {
+    this.world.exitHouse();
+    const exit = this.world.houseExitPos;
+    this.player.pos = { ...exit };
+    this.player.pixelPos = { x: exit.x * 32, y: exit.y * 32 };
+    this.notify('Left the house.', 'info');
+  }
+
+  handleHouseAction(facing: Vec2): void {
+    const tile = this.world.getHouseTile(facing.x, facing.y);
+    if (!tile) return;
+
+    // House decoration placement
+    if (this.houseDecorationMode) {
+      const placed = this.world.placeHouseDecoration(facing.x, facing.y, this.houseDecorationMode);
+      if (placed) {
+        this.notify(`Placed ${ITEMS[this.houseDecorationMode]?.name ?? this.houseDecorationMode}!`, 'success');
+        this.houseDecorationMode = null;
+      } else {
+        this.notify('Cannot place there!', 'error');
+      }
+      return;
+    }
+
+    switch (tile.decorationId) {
+      case 'bed':
+        this.sleep();
+        return;
+      case 'door':
+        this.exitHouse();
+        return;
+      case 'chest':
+        this.openScreen('inventory');
+        return;
+      case 'stove':
+      case 'counter':
+        this.openScreen('cooking');
+        return;
+    }
+
+    this.notify('Nothing here.', 'info');
+  }
+
+  // ============ Seed Selection ============
+  getAvailableSeeds(): { itemId: string; name: string; quantity: number; cropId: string }[] {
+    const seeds: { itemId: string; name: string; quantity: number; cropId: string }[] = [];
+    const seen = new Set<string>();
+    for (const slot of this.player.inventory) {
+      if (!slot.item) continue;
+      const def = ITEMS[slot.item.itemId];
+      if (!def || def.category !== 'seed') continue;
+      if (seen.has(slot.item.itemId)) continue;
+      seen.add(slot.item.itemId);
+      const cropId = slot.item.itemId.replace('_seed', '');
+      if (!CROPS[cropId]) continue;
+      seeds.push({
+        itemId: slot.item.itemId,
+        name: def.name,
+        quantity: this.player.countItem(slot.item.itemId),
+        cropId,
+      });
+    }
+    return seeds;
+  }
+
+  plantSelectedSeed(seedId: string): void {
+    if (!this.pendingPlant) return;
+    const cropId = seedId.replace('_seed', '');
+    const cropDef = CROPS[cropId];
+    if (!cropDef) {
+      this.notify('Unknown seed!', 'error');
+      this.closeScreen();
+      return;
+    }
+    if (!cropDef.seasons.includes(this.gameTime.season)) {
+      this.notify(`Can't grow ${cropDef.name} in ${SEASON_NAMES[this.gameTime.season]} season!`, 'warning');
+      return;
+    }
+    if (this.world.plantCrop(this.pendingPlant.x, this.pendingPlant.y, cropId, this.gameTime.season)) {
+      this.player.removeItem(seedId, 1);
+      this.notify(`Planted ${cropDef.name}!`, 'success');
+      this.player.consumeEnergy(2);
+      this.pendingPlant = null;
+      this.closeScreen();
+    } else {
+      this.notify('Failed to plant there!', 'error');
+    }
+  }
+
+  cancelSeedSelect(): void {
+    this.pendingPlant = null;
+    this.closeScreen();
+  }
+
+  // ============ Build Menu ============
+  canAffordBuilding(buildingType: BuildingType): boolean {
+    const def = BUILDINGS[buildingType];
+    if (!def) return false;
+    if (this.player.stats.money < def.cost) return false;
+    for (const mat of def.materials) {
+      if (!this.player.hasItem(mat.itemId, mat.quantity)) return false;
+    }
+    return true;
+  }
+
+  startBuildMode(buildingType: BuildingType): void {
+    if (!this.canAffordBuilding(buildingType)) {
+      this.notify('Not enough resources!', 'error');
+      return;
+    }
+    this.buildMode = buildingType;
+    this.closeScreen();
+    this.notify(`Tap where to place the ${BUILDINGS[buildingType].name}.`, 'info');
+  }
+
+  placeBuildingAt(x: number, y: number, buildingType: BuildingType): void {
+    const def = BUILDINGS[buildingType];
+    if (!def) {
+      this.buildMode = null;
+      return;
+    }
+    if (!this.canAffordBuilding(buildingType)) {
+      this.notify('Not enough resources!', 'error');
+      this.buildMode = null;
+      return;
+    }
+    if (!this.world.canPlaceBuilding(x, y, buildingType)) {
+      this.notify('Cannot build there!', 'error');
+      return;
+    }
+    // Deduct gold and materials
+    this.player.spendMoney(def.cost);
+    for (const mat of def.materials) {
+      this.player.removeItem(mat.itemId, mat.quantity);
+    }
+    // Place
+    if (this.world.placeBuilding(x, y, buildingType)) {
+      this.notify(`Built ${def.name}! 🏗️`, 'success');
+    } else {
+      // Refund on failure
+      this.player.addMoney(def.cost);
+      for (const mat of def.materials) {
+        this.player.addItem(mat.itemId, mat.quantity);
+      }
+      this.notify('Failed to build!', 'error');
+    }
+    this.buildMode = null;
+  }
+
+  cancelBuildMode(): void {
+    this.buildMode = null;
+  }
+
+  // ============ Cooking ============
+  canCook(recipeId: string): boolean {
+    const recipe = COOKING_RECIPES.find(r => r.id === recipeId);
+    if (!recipe) return false;
+    for (const inp of recipe.inputs) {
+      if (!this.player.hasItem(inp.itemId, inp.quantity)) return false;
+    }
+    return true;
+  }
+
+  cook(recipeId: string): void {
+    const recipe = COOKING_RECIPES.find(r => r.id === recipeId);
+    if (!recipe) return;
+    for (const inp of recipe.inputs) {
+      if (!this.player.hasItem(inp.itemId, inp.quantity)) {
+        this.notify(`Missing ${ITEMS[inp.itemId]?.name ?? inp.itemId}!`, 'error');
+        return;
+      }
+    }
+    for (const inp of recipe.inputs) {
+      this.player.removeItem(inp.itemId, inp.quantity);
+    }
+    this.player.addItem(recipe.output.itemId, recipe.output.quantity);
+    this.notify(`Cooked ${ITEMS[recipe.output.itemId]?.name ?? recipe.output.itemId}!`, 'success');
+  }
+
+  eatFood(itemId: string): void {
+    const def = ITEMS[itemId];
+    if (!def) return;
+    if (def.category !== 'food' && itemId !== 'space_soup' && itemId !== 'energy_drink') {
+      this.notify("That's not food!", 'warning');
+      return;
+    }
+    if (!this.player.removeItem(itemId, 1)) {
+      this.notify("You don't have that!", 'error');
+      return;
+    }
+    let energy = 0;
+    if (itemId === 'energy_drink') energy = 30;
+    else if (itemId === 'space_soup') energy = 50;
+    else {
+      const recipe = COOKING_RECIPES.find(r => r.output.itemId === itemId);
+      energy = recipe?.energy ?? 20;
+    }
+    this.player.restoreEnergy(energy);
+    this.notify(`Ate ${def.name}. +${energy} energy!`, 'success');
+  }
+
+  // ============ House Decoration Mode ============
+  startHouseDecorationMode(decorationId: string): void {
+    this.houseDecorationMode = decorationId;
+    this.notify(`Tap where to place ${ITEMS[decorationId]?.name ?? decorationId}`, 'info');
+    this.closeScreen();
   }
 
   // ============ Fishing ============
@@ -782,12 +1038,27 @@ export class GameEngine {
   // Context-sensitive action label
   getActionLabel(): string {
     const facing = this.player.getFacingTile();
-    
+
     if (this.world.isInMine()) {
       const t = this.world.getMineTile(facing.x, facing.y);
       if (t?.type === 'mine_rock') return 'Mine';
       if (t?.decorationId === 'mine_exit') return 'Exit';
       return 'Action';
+    }
+
+    // House interior labels
+    if (this.world.isInHouse()) {
+      if (this.houseDecorationMode) return 'Place';
+      const t = this.world.getHouseTile(facing.x, facing.y);
+      if (!t) return 'Action';
+      switch (t.decorationId) {
+        case 'bed': return 'Sleep';
+        case 'door': return 'Exit';
+        case 'chest': return 'Storage';
+        case 'stove':
+        case 'counter': return 'Cook';
+        default: return 'Action';
+      }
     }
 
     // Check NPC
@@ -799,10 +1070,11 @@ export class GameEngine {
     const tile = this.world.getTile(facing.x, facing.y);
     if (!tile) return 'Action';
 
+    if (this.buildMode) return `Place ${BUILDINGS[this.buildMode]?.name ?? 'Building'}`;
     if (this.decorationMode) return 'Place';
 
     if (tile.decorationId === 'shop') return 'Shop';
-    if (tile.decorationId === 'house') return 'Sleep';
+    if (tile.decorationId === 'house') return 'Enter';
     if (tile.decorationId === 'mine_entrance') return 'Enter Mine';
     if (tile.forageId) return 'Forage';
     if (tile.type === 'water' || this.world.isAdjacentToWater(facing.x, facing.y)) {
@@ -816,8 +1088,6 @@ export class GameEngine {
     }
     if (tile.type === 'tilled') {
       if (!tile.watered) return 'Water';
-      const sel = this.player.getSelectedItem();
-      if (sel && ITEMS[sel.itemId]?.category === 'seed') return 'Plant';
       return 'Plant';
     }
     if (tile.type === 'grass' || tile.type === 'floor') {

@@ -1123,3 +1123,261 @@ html, body {
   background: rgba(100, 100, 200, 0.4);
   border-radius: 2px;
 }
+
+/* ============ Seed Select Modal ============ */
+.seed-select-modal {
+  max-width: 380px;
+}
+
+.seed-select-hint {
+  color: #88aaff;
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+}
+
+.seed-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seed-select-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(50, 50, 80, 0.4);
+  border: 1px solid rgba(100, 100, 150, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.seed-select-item.out-of-season {
+  opacity: 0.55;
+}
+
+.seed-select-icon {
+  font-size: 1.5rem;
+  width: 36px;
+  text-align: center;
+}
+
+.seed-select-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.seed-select-name {
+  display: block;
+  color: #ddddee;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.seed-select-meta {
+  display: block;
+  color: #8899bb;
+  font-size: 0.72rem;
+  margin-top: 2px;
+}
+
+.seed-warn {
+  color: #ffaa44;
+}
+
+.seed-select-btn {
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* ============ Build Modal ============ */
+.build-modal {
+  max-width: 420px;
+}
+
+.build-money {
+  text-align: right;
+  color: #ffdd44;
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.build-hint {
+  color: #88aaff;
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+}
+
+.build-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.build-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(50, 50, 80, 0.4);
+  border: 1px solid rgba(100, 100, 150, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.build-item.locked {
+  opacity: 0.55;
+}
+
+.build-item-icon {
+  font-size: 1.6rem;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.build-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.build-item-name {
+  display: block;
+  color: #ddddee;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.build-item-desc {
+  display: block;
+  color: #8899bb;
+  font-size: 0.72rem;
+  margin: 2px 0 4px;
+}
+
+.build-item-costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.build-cost-gold {
+  color: #ffdd44;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.build-cost-mat {
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.build-cost-mat.have {
+  color: #88ff88;
+}
+
+.build-cost-mat.need {
+  color: #ff8888;
+}
+
+.build-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ============ Cooking Modal ============ */
+.cooking-modal {
+  max-width: 400px;
+}
+
+.cooking-hint {
+  color: #88aaff;
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+}
+
+.cooking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cooking-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(50, 50, 80, 0.4);
+  border: 1px solid rgba(100, 100, 150, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.cooking-item.locked {
+  opacity: 0.55;
+}
+
+.cooking-item-icon {
+  font-size: 1.5rem;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.cooking-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cooking-item-name {
+  display: block;
+  color: #ddddee;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.cooking-item-desc {
+  display: block;
+  color: #8899bb;
+  font-size: 0.72rem;
+  margin: 2px 0 4px;
+}
+
+.cooking-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.cooking-ingredient {
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.cooking-ingredient.have {
+  color: #88ff88;
+}
+
+.cooking-ingredient.need {
+  color: #ff8888;
+}
+
+.cooking-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ============ Inventory Category Colors ============ */
+.inv-slot.cat-seed { border-color: rgba(100, 200, 100, 0.4); }
+.inv-slot.cat-crop { border-color: rgba(255, 170, 50, 0.4); }
+.inv-slot.cat-ore { border-color: rgba(170, 170, 170, 0.4); }
+.inv-slot.cat-material { border-color: rgba(139, 90, 43, 0.4); }
+.inv-slot.cat-fish { border-color: rgba(68, 136, 204, 0.4); }
+.inv-slot.cat-forage { border-color: rgba(255, 100, 170, 0.4); }
+.inv-slot.cat-crafted { border-color: rgba(170, 100, 255, 0.4); }
+.inv-slot.cat-tool { border-color: rgba(100, 100, 150, 0.4); }
+.inv-slot.cat-decoration { border-color: rgba(255, 200, 50, 0.4); }
+.inv-slot.cat-furniture { border-color: rgba(200, 150, 100, 0.4); }
+.inv-slot.cat-food { border-color: rgba(255, 120, 80, 0.4); }
+.inv-slot.cat-misc { border-color: rgba(150, 150, 150, 0.4); }

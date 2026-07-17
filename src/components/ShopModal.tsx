@@ -9,8 +9,11 @@ interface Props {
 
 export function ShopModal({ engine, onClose }: Props) {
   const [, forceUpdate] = useState({});
-  const [tab, setTab] = useState<'buy' | 'sell' | 'deco'>('buy');
+  const [tab, setTab] = useState<'buy' | 'sell' | 'deco' | 'furniture'>('buy');
   const refresh = () => forceUpdate({});
+
+  const furnitureItems = SHOP_STOCK.filter(s => ITEMS[s.itemId]?.category === 'furniture');
+  const buyItems = SHOP_STOCK.filter(s => ITEMS[s.itemId]?.category !== 'furniture');
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -24,13 +27,14 @@ export function ShopModal({ engine, onClose }: Props) {
             <button className={`tab ${tab === 'buy' ? 'active' : ''}`} onClick={() => setTab('buy')}>Buy</button>
             <button className={`tab ${tab === 'sell' ? 'active' : ''}`} onClick={() => setTab('sell')}>Sell</button>
             <button className={`tab ${tab === 'deco' ? 'active' : ''}`} onClick={() => setTab('deco')}>Decorate</button>
+            <button className={`tab ${tab === 'furniture' ? 'active' : ''}`} onClick={() => setTab('furniture')}>Furniture</button>
           </div>
 
           <div className="shop-money">💰 {engine.player.stats.money}g</div>
 
           {tab === 'buy' && (
             <div className="shop-list">
-              {SHOP_STOCK.map((stock, i) => {
+              {buyItems.map((stock, i) => {
                 const item = ITEMS[stock.itemId];
                 if (!item) return null;
                 const price = getItemBuyValue(stock.itemId);
@@ -110,6 +114,34 @@ export function ShopModal({ engine, onClose }: Props) {
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+
+          {tab === 'furniture' && (
+            <div className="shop-list">
+              <p className="deco-hint">Buy furniture, then select it in your Bag and tap "Place" inside your house!</p>
+              {furnitureItems.map((stock, i) => {
+                const item = ITEMS[stock.itemId];
+                if (!item) return null;
+                const price = getItemBuyValue(stock.itemId);
+                return (
+                  <div key={i} className="shop-item">
+                    <span className="shop-item-icon">{item.emoji}</span>
+                    <div className="shop-item-info">
+                      <span className="shop-item-name">{item.name}</span>
+                      <span className="shop-item-desc">{item.description}</span>
+                    </div>
+                    <span className="shop-item-price">{price}g</span>
+                    <button
+                      className="btn btn-buy"
+                      disabled={engine.player.stats.money < price}
+                      onClick={() => { engine.buyItem(stock.itemId, 1); refresh(); }}
+                    >
+                      Buy
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

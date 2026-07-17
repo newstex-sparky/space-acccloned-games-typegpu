@@ -15,7 +15,26 @@ export type TileType =
   | 'forage'
   | 'decoration'
   | 'mine_rock'
-  | 'mine_floor';
+  | 'mine_floor'
+  | 'house_interior'
+  | 'building';
+
+// House interior furniture / tile subtypes. Stored in `Tile.decorationId`
+// when the tile type is 'house_interior' so we can reuse the existing tile
+// system without a parallel furniture array.
+export type HouseFurnitureType =
+  | 'bed'
+  | 'table'
+  | 'chair'
+  | 'counter'
+  | 'chest'
+  | 'door'
+  | 'lamp'
+  | 'rug'
+  | 'plant_pot'
+  | 'shelf'
+  | 'tv'
+  | 'stove';
 
 export interface Tile {
   type: TileType;
@@ -104,7 +123,18 @@ export interface QuestObjective {
   done: boolean;
 }
 
-export type GameScreen = 'world' | 'shop' | 'inventory' | 'crafting' | 'quests' | 'dialog' | 'map';
+export type GameScreen =
+  | 'world'
+  | 'shop'
+  | 'inventory'
+  | 'crafting'
+  | 'quests'
+  | 'dialog'
+  | 'map'
+  | 'seed_select'
+  | 'build'
+  | 'cooking'
+  | 'house';
 
 export interface Notification {
   id: number;
@@ -160,4 +190,45 @@ export interface CropDef {
   seasons: Season[];
   color: string;
   seedColor: string;
+}
+
+// ============ Buildable Buildings ============
+export type BuildingType =
+  | 'coop'
+  | 'barn'
+  | 'well'
+  | 'silo'
+  | 'shed'
+  | 'greenhouse';
+
+export interface BuildingDef {
+  id: BuildingType;
+  name: string;
+  description: string;
+  cost: number;            // gold cost
+  materials: ItemStack[];  // required materials
+  width: number;           // tile footprint
+  height: number;
+  color: string;
+  roofColor: string;
+  emoji: string;
+}
+
+// A building instance placed on the overworld map
+export interface PlacedBuilding {
+  id: string;
+  type: BuildingType;
+  x: number;  // top-left tile
+  y: number;
+}
+
+// ============ Cooking Recipes ============
+export interface CookingRecipe {
+  id: string;
+  name: string;
+  inputs: ItemStack[];
+  output: ItemStack;
+  energy: number;  // energy restored when eaten
+  sellValue: number;
+  emoji: string;
 }

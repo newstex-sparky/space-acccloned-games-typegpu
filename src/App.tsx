@@ -10,6 +10,9 @@ import { CraftingModal } from './components/CraftingModal';
 import { QuestModal } from './components/QuestModal';
 import { DialogModal } from './components/DialogModal';
 import { Notifications } from './components/Notifications';
+import { SeedSelectModal } from './components/SeedSelectModal';
+import { BuildModal } from './components/BuildModal';
+import { CookingModal } from './components/CookingModal';
 import { WORLD_W, WORLD_H, TILE_SIZE } from './engine/World';
 import { NPCS } from './engine/npcs';
 import { ITEMS } from './engine/items';
@@ -65,9 +68,14 @@ export function App() {
     setActiveNPC(null);
   }, [engine]);
 
-  const handleNavTab = (tab: 'inventory' | 'shop' | 'crafting' | 'quests' | 'map') => {
+  const handleNavTab = (tab: 'inventory' | 'shop' | 'crafting' | 'quests' | 'map' | 'build' | 'decorate') => {
     if (tab === 'map') {
       setShowMap(true);
+    } else if (tab === 'build') {
+      engine.openScreen('build');
+    } else if (tab === 'decorate') {
+      // Open shop decorate tab — reuse the shop with a flag
+      engine.openScreen('shop');
     } else {
       engine.openScreen(tab);
     }
@@ -87,8 +95,10 @@ export function App() {
             <p>🌾 Farm cosmic crops across 4 space seasons</p>
             <p>⛏️ Explore deep space mines for rare ores</p>
             <p>🎣 Catch exotic space fish</p>
+            <p>🏠 Enter your house, decorate & cook meals</p>
+            <p>🏗️ Build coops, barns, wells & greenhouses</p>
             <p>🤝 Befriend 4 unique colonists</p>
-            <p>🔨 Craft tools and decorations</p>
+            <p>🍳 Cook crops into energy-restoring meals</p>
             <p>📋 Complete quests for rewards</p>
           </div>
           <button className="btn-start" onClick={startGame}>Start Colony</button>
@@ -98,12 +108,34 @@ export function App() {
     );
   }
 
+  const isInHouse = engine.world.isInHouse();
+
   return (
     <div className="game-container">
       <GameCanvas engine={engine} />
       <div className="ui-layer">
         <HUD engine={engine} />
         <Notifications notifications={notifications} />
+
+        {/* Build mode badge */}
+        {engine.buildMode && (
+          <div className="hud-deco-badge" style={{ top: '50px' }}>
+            🏗️ Placing {engine.buildMode} — tap a spot! 
+            <button className="btn btn-danger" style={{ marginLeft: '8px', padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => { engine.cancelBuildMode(); forceUpdate({}); }}>
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {/* House decoration mode badge */}
+        {engine.houseDecorationMode && (
+          <div className="hud-deco-badge" style={{ top: '50px' }}>
+            🪑 Placing {ITEMS[engine.houseDecorationMode]?.name ?? engine.houseDecorationMode}
+            <button className="btn btn-danger" style={{ marginLeft: '8px', padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => { engine.houseDecorationMode = null; forceUpdate({}); }}>
+              Cancel
+            </button>
+          </div>
+        )}
 
         {!screen && !activeNPC && (
           <TouchControls engine={engine} />
@@ -120,6 +152,16 @@ export function App() {
               <span className="nav-icon">🏪</span>
               <span className="nav-label">Shop</span>
             </button>
+            <button className="nav-btn" onClick={() => handleNavTab('build')}>
+              <span className="nav-icon">🏗️</span>
+              <span className="nav-label">Build</span>
+            </button>
+            {isInHouse && (
+              <button className="nav-btn" onClick={() => handleNavTab('decorate')}>
+                <span className="nav-icon">🪑</span>
+                <span className="nav-label">Decor</span>
+              </button>
+            )}
             <button className="nav-btn" onClick={() => handleNavTab('crafting')}>
               <span className="nav-icon">🔨</span>
               <span className="nav-label">Craft</span>
@@ -140,6 +182,9 @@ export function App() {
         {screen === 'shop' && <ShopModal engine={engine} onClose={handleCloseScreen} />}
         {screen === 'crafting' && <CraftingModal engine={engine} onClose={handleCloseScreen} />}
         {screen === 'quests' && <QuestModal engine={engine} onClose={handleCloseScreen} />}
+        {screen === 'seed_select' && <SeedSelectModal engine={engine} onClose={handleCloseScreen} />}
+        {screen === 'build' && <BuildModal engine={engine} onClose={handleCloseScreen} />}
+        {screen === 'cooking' && <CookingModal engine={engine} onClose={handleCloseScreen} />}
         {activeNPC && <DialogModal engine={engine} onClose={handleCloseDialog} />}
 
         {/* Map overlay */}
@@ -174,12 +219,19 @@ function MapModal({ engine, onClose }: { engine: GameEngine; onClose: () => void
         else if (t.type === 'path') color = '#887766';
         else if (t.type === 'floor') color = '#554433';
         else if (t.type === 'tilled' || t.type === 'crop') color = '#553311';
+        else if (t.type === 'building') color = '#cc8844';
         if (t.decorationId === 'house') color = '#aa6644';
         if (t.decorationId === 'shop') color = '#4488ff';
         if (t.decorationId === 'mine_entrance') color = '#ff8800';
         ctx.fillStyle = color;
         ctx.fillRect(x * scale, y * scale, scale, scale);
       }
+    }
+
+    // Draw buildings
+    for (const b of world.buildings) {
+      ctx.fillStyle = '#cc8844';
+      ctx.fillRect(b.x * scale, b.y * scale, 3 * scale, 3 * scale);
     }
 
     // Draw NPCs
@@ -210,6 +262,7 @@ function MapModal({ engine, onClose }: { engine: GameEngine; onClose: () => void
             <div><span style={{ color: '#4488ff' }}>●</span> Shop</div>
             <div><span style={{ color: '#ff8800' }}>●</span> Mine</div>
             <div><span style={{ color: '#2244aa' }}>●</span> Lake</div>
+            <div><span style={{ color: '#cc8844' }}>●</span> Building</div>
           </div>
           <div className="map-npcs">
             <p>Colonists on the station:</p>
