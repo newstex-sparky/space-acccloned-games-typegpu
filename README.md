@@ -1,4 +1,4 @@
-# 🌱 Space Harvest 🚀
+# 🚀 Space Harvest
 
 A complete Stardew Valley clone set in space — built with React, Vite, and HTML5 Canvas. Mobile-first with full touch controls.
 
@@ -64,7 +64,11 @@ A complete Stardew Valley clone set in space — built with React, Vite, and HTM
 ### 🏠 Building & Decoration
 - 6 placeable decorations: House, Fence, Lamp, Solar Panel, Antenna, Garden Gnome
 
-## Mobile Controls
+### 🎮 Game Controller Support
+- Play with USB game controllers
+- Includes button mapping and vibration feedback
+
+### 📱 Mobile Controls
 
 | Control | Action |
 |---------|--------|
@@ -115,6 +119,7 @@ A complete Stardew Valley clone set in space — built with React, Vite, and HTM
 - **Vite 5** — Build tooling, dev server
 - **HTML5 Canvas** — Game world rendering (48×48 tilemap)
 - **TypeScript** — Type-safe engine and components
+- **Game Controller API** — USB game controller support
 - **GitHub Actions** — Auto-deployment to GitHub Pages
 
 ## Development
@@ -124,6 +129,8 @@ npm install
 npm run dev      # Start dev server at localhost:8001
 npm run build    # Production build to dist/
 npm run preview  # Preview production build
+npm run test     # Run unit tests with Vitest
+npm run deploy   # Deploy to GitHub Pages
 ```
 
 ## Deployment
